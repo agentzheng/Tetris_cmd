@@ -10,34 +10,38 @@ The start time:2017/1/27
 #include<cstdlib>
 #include<time.h>
 #include<windows.h>
-#define SIZE 4
+
+#define SIZE 4//为什么SIZE 不能用const？
 
 const int ROWS=20;//使用const 类型常量比用define好
 const int COLS=10;
 
 
 using namespace std;
-/*想法，一个用来储存坐标的数组。*/
-struct Coordinate
+
+struct Coordinate//字如其名，就是坐标
 {
     int x;
     int y;
 };
 
-Coordinate coordinate[7][4]=
+//七种基本类型
+
+Coordinate coordinate[7][4]=//第0个是4*4，第3个是2*2，其余是3*3
 {
-    {{4,0},{4,1},{4,2},{4,3}},
-    {{1,1},{1,2},{2,1},{2,2}},
-    {{4,1},{4,2},{4,3},{3,3}},
-    {{4,1},{4,2},{4,3},{3,2}},
-    {{4,0},{4,1},{4,2},{3,0}},
-    {{3,1},{3,2},{4,2},{4,3}},
-    {{4,0},{4,1},{3,1},{3,2}}
+    {{1,0},{1,1},{1,2},{1,3}},//一条横线，4*4方格
+    {{0,0},{1,0},{1,1},{1,2}},//3*3
+    {{1,0},{1,1},{1,2},{0,2}},//3*3
+    {{0,0},{0,1},{1,0},{1,1}},//田字形2*2
+    {{1,0},{1,1},{0,1},{0,2}},//之字形1 3*3
+    {{1,0},{1,1},{1,2},{0,1}},//土字形 3*3
+    {{0,0},{0,1},{1,1},{1,2}}//之字形2 3*3
 };
 
 
-struct Part
+struct Part//用来储存现在part的信息的结构
 {
+	int type;
     Coordinate con[4];
     int line;
 };
@@ -46,7 +50,7 @@ void Refresh(int matrix[ROWS][COLS],Part * part);
 void DownStair(int matrix[ROWS][COLS],int i);
 void Clean(int matrix[ROWS][COLS]);
 Part * GetPart(Part * part);
-void rotate(Part * part);
+bool rotate(Part * part，int matrix[ROWS][COLS])；
 bool Falling(Part * part,int matrix[ROWS][COLS]);
 
 
@@ -59,11 +63,13 @@ int main()
 		matrix[i][j]=1;
 	}
 	Part * part=GetPart(NULL);
-	while(Falling(part,matrix))
+	tag:while(Falling(part,matrix))
 	{
 		Clean(matrix);
 		Refresh(matrix,part);
 	}
+	part=GetPart(part);
+	goto tag;
 	return 0;
 }
 
@@ -86,7 +92,7 @@ void Refresh(int matrix[ROWS][COLS],Part * part)
 			cout<<copy[i][j]<<"  ";
 		cout<<endl;
 	}
-	Sleep(500);
+	Sleep(100);
 }
 
 
@@ -124,12 +130,12 @@ Part * GetPart(Part * part)
 {
 	delete part;
 	srand((unsigned)time(NULL));
-	int index=int(rand()%7);
 	part=new Part;
+	part->type=rand()%7;
 	for(int i=0;i<4;i++)
 	{
-		part->con[i].x=coordinate[index][i].x;
-		part->con[i].y=coordinate[index][i].y;
+		part->con[i].x=coordinate[part->type][i].x;
+		part->con[i].y=coordinate[part->type][i].y;
 	}
 	part->line=0;
 	return part;
@@ -137,26 +143,39 @@ Part * GetPart(Part * part)
 
 bool Falling(Part * part,int matrix[ROWS][COLS])//判断是否在下落，如果下落，返回true并将part->line++，否则，返回false
 {
+	rotate(part);
 	for(int i=0;i<4;i++)
 	{
-		if(matrix[part->con[i].x+part->line+1][part->con[i].y]!=0||part->line>=19)
-		{
-			return false;
-		}
+
+		if(matrix[part->con[i].x+part->line+1][part->con[i].y]!=0||part->line>=ROWS-1)
+			{
+				for(int i=0;i<4;i++)
+					matrix[part->con[i].x+part->line][part->con[i].y]=1;
+				return false;
+
+			}
 	}
 	part->line++;
-	rotate(part);
 	return true;
 }
 
-void rotate(Part * part)
-{
-	for(int i=0;i<4;i++)
+bool rotate(Part * part，int matrix[ROWS][COLS])//这个函数还是有点问题，我们要考虑到能不能旋转
+{	
+	int stat=0;
+	Coordinate xy[SIZE];
+	switch(part->type)
 	{
-		int x=part->con[i].x;
-        int y=part->con[i].y;
-        part->con[i].x=y;
-       	part->con[i].y=3-x;
+		case 0:stat=3; break;
+		case 3:stat=1; break;
+		default:stat=2;break;
 	}
+	for(int i=0;i<SIZE;i++)
+    {
+       xy[i].x=part->con[i].y,xy[i].y=stat-part->con[i].x;
+       if(matrix[xy[i].x+part->line][matrix[xy[i].y]!=0)
+      	return false
+
+    }
+    return true;
 }
 
